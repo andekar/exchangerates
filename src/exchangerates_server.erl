@@ -63,7 +63,7 @@ handle_call({rate, CountryCode}, _From, State) ->
 
 handle_call({country, CountryCode}, _From, State) ->
     CountryDB = proplists:get_value(?COUNTRY_DB, State),
-    {CountryCode, CountryName} = dets:lookup(CountryDB, CountryCode),
+    [{CountryCode, CountryName}] = dets:lookup(CountryDB, CountryCode),
     {reply, {CountryCode, CountryName}, State};
 
 handle_call(countries, _From, State) ->
