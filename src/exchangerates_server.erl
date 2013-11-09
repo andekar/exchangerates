@@ -2,7 +2,7 @@
 
 -behaviour(gen_server).
 
--export([start_link/0, rates/0, rate/1, countries/0, country/1]).
+-export([start_link/0, rates/0, rate/1, rate/2, countries/0, country/1]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
@@ -24,6 +24,9 @@ rates() ->
 
 rate(CountryCode) ->
     gen_server:call(?MODULE, {rate, CountryCode}).
+
+rate(FromCode, ToCode) ->
+    gen_server:call(?MODULE, {rate, FromCode, ToCode}).
 
 countries() ->
     gen_server:call(?MODULE, countries).
@@ -60,6 +63,12 @@ handle_call({rate, CountryCode}, _From, State) ->
     RatesDB = proplists:get_value(?RATE_DB, State),
     [{CountryCode, Rate}] = dets:lookup(RatesDB, CountryCode),
     {reply, {CountryCode, Rate}, State};
+
+handle_call({rate, FromCode, ToCode}, _From, State) ->
+    RatesDB = proplists:get_value(?RATE_DB, State),
+    [{FromCode, FromRate}] = dets:lookup(RatesDB, FromCode),
+    [{ToCode, ToRate}] = dets:lookup(RatesDB, ToCode),
+    {reply, {res, FromRate / ToRate}, State};
 
 handle_call({country, CountryCode}, _From, State) ->
     CountryDB = proplists:get_value(?COUNTRY_DB, State),
