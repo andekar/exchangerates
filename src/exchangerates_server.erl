@@ -112,7 +112,7 @@ fetch_exchangerates(Id) ->
     {ok, {{"HTTP/1.1",_ReturnCode, _State}, _Head, Body}}
         = httpc:request(Method, {URL, Header}, HTTPOptions, Options),
     Res = destructify(mochijson2:decode(Body)),
-    lager:info("got ~p", [Res]),
+    lager:info("updated exchangerates"),
     ?USD = proplists:get_value(?BASE, Res), %make sure we have the expected base
     case proplists:get_value(?RATES, Res) of
         undefined -> do_nothing;
@@ -128,7 +128,7 @@ fetch_countries(Id) ->
     {ok, {{"HTTP/1.1",_ReturnCode, _State}, _Head, Body}}
         = httpc:request(Method, {URL, Header}, HTTPOptions, Options),
     Res = destructify(mochijson2:decode(Body)),
-    lager:info("got ~p", [Res]),
+    lager:info("updated country list"),
     true = proplists:is_defined(?USD, Res),
     gen_server:cast(?MODULE, {update_countries, Res}).
 
