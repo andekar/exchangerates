@@ -68,7 +68,7 @@ handle_call({rate, FromCode, ToCode}, _From, State) ->
     RatesDB = proplists:get_value(?RATE_DB, State),
     [{FromCode, FromRate}] = dets:lookup(RatesDB, FromCode),
     [{ToCode, ToRate}] = dets:lookup(RatesDB, ToCode),
-    {reply, {res, FromRate / ToRate}, State};
+    {reply, {res, ToRate/FromRate}, State};
 
 handle_call({country, CountryCode}, _From, State) ->
     CountryDB = proplists:get_value(?COUNTRY_DB, State),
