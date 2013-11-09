@@ -1,0 +1,15 @@
+{application, exchangerates,
+ [
+  {description, ""},
+  {vsn, "0.1"},
+  {registered, []},
+  {applications, [ mochiweb,
+                   kernel,
+		           crypto,
+                   asn1,
+                   stdlib,
+                   inets
+                 ]},
+  {mod, { exchangerates_app, []}},
+  {env, []}
+ ]}.

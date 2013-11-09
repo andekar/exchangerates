@@ -1,0 +1,14 @@
+*.beam
+rel/exchangerates*/*
+deps
+.#*
+rebar
+*ebin*
+*.dets
+*.pem
+*.crt
+*.csr
+*.org
+*.key
+*.der
+sys.config
