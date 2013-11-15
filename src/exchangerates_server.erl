@@ -7,6 +7,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
+-export([fetch_exchangerates/1, fetch_countries/1]).
+
 -define(INTERVAL, 60000 * 60 * 24). % One day
 
 -define(EXCHANGE_URL, "http://openexchangerates.org/api/latest.json?app_id=").
@@ -44,13 +46,13 @@ init([]) ->
              {ok, Val} ->
                  Val
          end,
+    {_, Rates} = dets:open_file("../../exchange_rates.dets",[{type, set}]), %% {rate, amount}
+    {_, Countries} = dets:open_file("../../exchange_countries.dets",[{type, set}]), %% {rate, amount}
     %start by calling and then start interval running
     fetch_exchangerates(Id),
     fetch_countries(Id),
-    timer:apply_interval(?INTERVAL, ?MODULE, fun fetch_exchangerates/1, [Id]),
-    timer:apply_interval(?INTERVAL, ?MODULE, fun fetch_countries/1, [Id]),
-    {_, Rates} = dets:open_file("../../exchange_rates.dets",[{type, set}]), %% {rate, amount}
-    {_, Countries} = dets:open_file("../../exchange_countries.dets",[{type, set}]), %% {rate, amount}
+    {ok,_TRef} = timer:apply_interval(?INTERVAL, ?MODULE, fetch_exchangerates, [Id]),
+    {ok, _TRef2} = timer:apply_interval(?INTERVAL, ?MODULE, fetch_countries, [Id]),
     {ok, [{?RATE_DB, Rates}, {?COUNTRY_DB, Countries}]}.
 
 handle_call(rates, _From, State) ->
@@ -122,7 +124,6 @@ fetch_exchangerates(Id) ->
         = httpc:request(Method, {URL, Header}, HTTPOptions, Options),
     Res = destructify(mochijson2:decode(Body)),
     lager:info("updated exchangerates"),
-    ?USD = proplists:get_value(?BASE, Res), %make sure we have the expected base
     case proplists:get_value(?RATES, Res) of
         undefined -> do_nothing;
         Rates -> gen_server:cast(?MODULE, {update_rates, Rates})
@@ -137,9 +138,12 @@ fetch_countries(Id) ->
     {ok, {{"HTTP/1.1",_ReturnCode, _State}, _Head, Body}}
         = httpc:request(Method, {URL, Header}, HTTPOptions, Options),
     Res = destructify(mochijson2:decode(Body)),
-    lager:info("updated country list"),
-    true = proplists:is_defined(?USD, Res),
-    gen_server:cast(?MODULE, {update_countries, Res}).
+    case proplists:is_defined(?USD, Res) of
+        true ->
+            lager:info("updated country list"),
+            gen_server:cast(?MODULE, {update_countries, Res});
+        _ -> lager:error("failed to update country list")
+    end.
 
 destructify(List) when is_list(List)->
     lists:map(fun destructify/1, List);
