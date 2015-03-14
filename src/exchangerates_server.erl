@@ -2,7 +2,7 @@
 
 -behaviour(gen_server).
 
--export([start_link/0, rates/0, rate/1, rate/2, countries/0, country/1]).
+-export([start_link/0, rates/0, rate/1, rate/2, countries/0, country/1, crates/0]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
@@ -32,6 +32,10 @@ rate(FromCode, ToCode) ->
 
 countries() ->
     gen_server:call(?MODULE, countries).
+
+%% returns {shortname, countryname, rate}
+crates() ->
+    gen_server:call(?MODULE, crates).
 
 country(CountryCode) ->
     gen_server:call(?MODULE, {country, CountryCode}).
@@ -82,6 +86,14 @@ handle_call(countries, _From, State) ->
     Countries = dets:foldl(fun(Rate, Acc) ->
                                    [Rate|Acc] end, [], CountryDB),
     {reply, Countries, State};
+
+handle_call(crates, _From, State) ->
+    CountryDB = proplists:get_value(?COUNTRY_DB, State),
+    RatesDB = proplists:get_value(?RATE_DB, State),
+    Crates = dets:foldl(fun({CountryCode, Country}, Acc) ->
+                                [{CountryCode, Rate}] = dets:lookup(RatesDB, CountryCode),
+                                [{CountryCode,Country,Rate}|Acc] end, [], CountryDB),
+    {reply, Crates, State};
 
 handle_call(Request, _From, State) ->
     lager:alert("Handle unknown call ~p", [Request]),
